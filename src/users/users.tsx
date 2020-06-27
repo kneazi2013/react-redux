@@ -7,58 +7,102 @@ type TStore = import("../store.d").TStore;
 type TUsersReducerState = import("./users-reducer").TUsersReducerState;
 
 type TUsers = TUsersReducerState & {
-  onHandleChange: (user: TUsersReducerState) => void;
+  onHandleChange: (
+    evt: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => (id: number) => void;
 };
 
-const onHandleChange = (dispatch: Dispatch, user: TUsersReducerState) => {
-  console.log("click", user.name);
+// ---------------------------------
+// Имплементация композиций
+
+const getUserById = (id: number): TUsersReducerState | undefined =>
+  usersArr.find((el) => el.id === id);
+
+const applyDispatch = (dispatch: Dispatch<any>) => (
+  user: TUsersReducerState | undefined
+) => {
   const action = users.actions.updateData(user);
   dispatch(action);
 };
 
-export function Users({ name, age, onHandleChange }: TUsers): JSX.Element {
+const compose = (...arg: Array<Function>) => {
+  return (id: number) => {
+    arg.reduce((value, fn) => {
+      return fn(value);
+    }, id);
+  };
+};
+
+// ---------------------------------
+// Имплементация карирования
+
+const onClick = (evt: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+  evt.preventDefault();
+  evt.stopPropagation();
+};
+
+const onHandleCurry = (dispatch: Dispatch<any>) => (
+  evt: React.MouseEvent<HTMLButtonElement, MouseEvent>
+) => {
+  onClick(evt);
+  return compose(getUserById, applyDispatch(dispatch));
+};
+
+// ---------------------------------
+
+function ListUsers({
+  id,
+  name,
+  age,
+  onHandleChange,
+}: TUsersReducerState & Pick<TUsers, "onHandleChange">) {
+  return (
+    <li>
+      <button onClick={(evt) => onHandleChange(evt)(id)}>
+        {id} - {name} = {age}
+      </button>
+    </li>
+  );
+}
+
+export function Users({ id, name, age, onHandleChange }: TUsers): JSX.Element {
   return (
     <div>
       <ul>
         {usersArr.map((user: TUsersReducerState, idx: number) => {
-          const { name, age } = user;
           return (
-            <li key={idx}>
-              <button
-                onClick={(evt) => {
-                  evt.preventDefault();
-                  evt.stopPropagation();
-                  onHandleChange(user);
-                }}
-              >
-                {name} = {age}
-              </button>
-            </li>
+            <ListUsers
+              key={idx}
+              id={user.id}
+              name={user.name}
+              age={user.age}
+              onHandleChange={onHandleChange}
+            />
           );
         })}
       </ul>
       <hr />
       <div>
-        User: {name} - {age}
+        User: {id} - {name} - {age}
       </div>
     </div>
   );
 }
 
+// ---------------------------------
+
 function UsersContainer(): JSX.Element {
   const dispatch = useDispatch();
-  const { name, age }: TUsersReducerState = useSelector(
+  const onHandleChange = useCallback(onHandleCurry(dispatch), [dispatch]);
+  const { id, name, age }: TUsersReducerState = useSelector(
     (store: TStore) => store.users
   );
 
-  const onChange = useCallback(
-    (user: TUsersReducerState) => {
-      onHandleChange(dispatch, user);
-    },
-    [dispatch]
+  return (
+    <Users id={id} name={name} age={age} onHandleChange={onHandleChange} />
   );
-
-  return <Users name={name} age={age} onHandleChange={onChange} />;
 }
+
+// ---------------------------------
 
 export default UsersContainer;

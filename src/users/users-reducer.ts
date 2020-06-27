@@ -2,24 +2,28 @@ import { createSlice } from "@reduxjs/toolkit";
 import { Action } from "redux";
 
 export type TUsersReducerState = {
+  readonly id: number;
   readonly name: string;
   readonly age: number;
 };
 
 type TUpdateDataAction = Action<string> & {
-  payload: TUsersReducerState;
+  payload: TUsersReducerState | undefined;
 };
 
 export const usersArr: TUsersReducerState[] = [
   {
+    id: 1,
     name: "Andrey",
     age: 18,
   },
   {
+    id: 2,
     name: "Wasea",
     age: 32,
   },
   {
+    id: 3,
     name: "Slava",
     age: 47,
   },

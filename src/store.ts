@@ -10,7 +10,6 @@ import users from "./users/users-reducer";
 const loggerMiddleware: Middleware<any, any, any> = (store) => {
   return (next) => {
     return (action) => {
-      console.log("action", action);
       return next(action);
     };
   };
@@ -22,7 +21,6 @@ const enhancers = [middlewareEnhancer];
 const composedEnhancers = composeWithDevTools(...enhancers);
 
 const rootReducer = combineReducers({
-  //counter: counter.reducer,
   users: users.reducer,
 });
 
